@@ -4,6 +4,7 @@
 # include <time.h>
 
 
+#define BLOCK_SIZE 16
 #define CHECK_CUDA_ERROR(val) check((val), #val, __FILE__, __LINE__)
 
 template <typename T>
@@ -33,21 +34,18 @@ void init_matrix(float *mat, int N) {
 }
 
 int main() {
-
-    float *h_a, *h_b, *h_c_cpu, *h_c_gpu;
-    float *d_a, *d_b, *d_c;
     int N = 1024;
-
     size_t size = N * N * sizeof(float); // matrix size
 
-    h_a = (float*)malloc(size);
-    h_b = (float*)malloc(size);
-    h_c_cpu = (float*)malloc(size);
-    h_c_gpu = (float*)malloc(size);
+    float* h_a = (float*)malloc(size);
+    float* h_b = (float*)malloc(size);
+    float* h_c_cpu = (float*)malloc(size);
+    float* h_c_gpu = (float*)malloc(size);
 
-    cudaMalloc(&d_a, size);
-    cudaMalloc(&d_b, size);
-    cudaMalloc(&d_c, size);
+    float *d_a, *d_b, *d_c;
+    CHECK_CUDA_ERROR(cudaMalloc(&d_a, size));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_b, size));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_c, size));
 
     init_matrix(h_a, N);
     init_matrix(h_b, N);    
@@ -56,12 +54,12 @@ int main() {
     cudaMemcpy(d_a, h_a, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_b, h_b, size, cudaMemcpyHostToDevice); 
 
-    dim3 blockSize(16, 16);
-    dim3 gridSize((N + blockSize.x - 1) / blockSize.x, (N + blockSize.y - 1) / blockSize.y);
+    dim3 blockSize(BLOCK_SIZE, BLOCK_SIZE);
+    dim3 gridSize((N + BLOCK_SIZE - 1) / BLOCK_SIZE, (N + BLOCK_SIZE - 1) / blockSize.y);
 
     printf("Matrix size: %dx%d\n", N, N);
     printf("Block size: %dx%d\n", blockSize.x, blockSize.y);
-    printf("Grid size: %dx%d\n", gridSize.x, gridSize.y);
+    // printf("Grid size: %dx%d\n", gridSize.x, gridSize.y);
 
     // Timing analysis
     cudaEvent_t start, stop;
